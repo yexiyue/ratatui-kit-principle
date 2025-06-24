@@ -8,6 +8,22 @@ use ratatui::{
 };
 use std::io;
 
+fn render_title() -> Line<'static> {
+    Line::from("Counter Application")
+        .style(Style::default().bold().light_blue())
+        .centered()
+}
+
+fn render_count(count: i32) -> Paragraph<'static> {
+    Paragraph::new(format!("Count: {}", count).light_green()).centered()
+}
+
+fn render_info() -> Line<'static> {
+    Line::from("Press q or Ctrl+C to quit, + to increase, - to decrease")
+        .style(Style::default().yellow())
+        .centered()
+}
+
 #[tokio::main]
 async fn main() -> io::Result<()> {
     let mut terminal = ratatui::init();
@@ -24,15 +40,9 @@ async fn main() -> io::Result<()> {
 
             let inner_area = block.inner(area);
 
-            let title = Line::from("Counter Application")
-                .style(Style::default().bold().light_blue())
-                .centered();
-
-            let text = Paragraph::new(format!("Count: {}", count).light_green()).centered();
-
-            let info = Line::from("Press q or Ctrl+C to quit, + to increase, - to decrease")
-                .style(Style::default().yellow())
-                .centered();
+            let title = render_title();
+            let text = render_count(count);
+            let info = render_info();
 
             let [top, body, bottom] = Layout::vertical([
                 Constraint::Length(1),
@@ -41,6 +51,7 @@ async fn main() -> io::Result<()> {
             ])
             .spacing(1)
             .areas(inner_area);
+
             f.render_widget(block, area);
             f.render_widget(title, top);
             f.render_widget(text, body);
