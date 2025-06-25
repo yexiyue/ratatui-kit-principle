@@ -1,7 +1,11 @@
-use ratatui::layout::{Constraint, Direction, Layout};
+use ratatui::layout::{Constraint, Direction};
 
 use super::component_helper::ComponentHelperExt;
-use crate::{component::AnyComponent, props::AnyProps, render::layout_style::LayoutStyle};
+use crate::{
+    component::AnyComponent,
+    props::AnyProps,
+    render::{drawer::ComponentDrawer, layout_style::LayoutStyle},
+};
 use std::ops::{Deref, DerefMut};
 
 pub struct InstantiatedComponent {
@@ -12,59 +16,41 @@ pub struct InstantiatedComponent {
 }
 
 impl InstantiatedComponent {
-    pub fn new(mut props: AnyProps, helper: Box<dyn ComponentHelperExt>) -> Self {
+    pub fn new(
+        mut props: AnyProps,
+        helper: Box<dyn ComponentHelperExt>,
+        layout_style: LayoutStyle,
+        children: Components,
+    ) -> Self {
         let component = helper.new_component(props.borrow());
 
         Self {
             component,
-            children: Components::default(),
+            children,
             helper,
-            layout_style: LayoutStyle::default(),
+            layout_style,
         }
     }
 
-    /// 渲染当前组件及其子组件，自动进行布局区域划分
-    ///
-    /// 1. 先根据自身 layout_style 计算出当前组件的实际绘制区域（应用 margin/offset）
-    /// 2. 绘制当前组件内容
-    /// 3. 根据主轴方向，获取所有子组件的布局约束，生成主布局
-    /// 4. 将主区域划分为多个子区域
-    /// 5. 对每个子区域再按交叉轴方向进一步细分，实现嵌套布局
-    /// 6. 递归调用每个子组件的 draw 方法，传入对应的区域
-    pub fn draw(&self, frame: &mut ratatui::Frame<'_>, area: ratatui::layout::Rect) {
+    pub fn draw(&self, drawer: &mut ComponentDrawer) {
         let layout_style = &self.layout_style;
+
         // 1. 计算应用 margin/offset 后的实际区域
-        let area = layout_style.inner_area(area);
+        let area = layout_style.inner_area(drawer.area);
+        drawer.area = area;
 
         // 2. 绘制当前组件内容
-        self.component.draw(frame, area);
+        self.component.draw(drawer);
 
-        // 3. 构建主布局，按主轴方向分配子区域
-        let layout = layout_style
-            .get_layout()
-            .constraints(self.children.get_constraints(layout_style.flex_direction));
-        let areas = layout.split(area);
+        // 3. 计算所有子组件的区域划分
+        let children_areas =
+            self.component
+                .calc_children_areas(&self.children, layout_style, drawer);
 
-        let mut children_areas: Vec<ratatui::prelude::Rect> = vec![];
-
-        // 4. 计算交叉轴方向（主轴为横则交叉轴为纵，反之亦然）
-        let rev_direction = match layout_style.flex_direction {
-            Direction::Horizontal => Direction::Vertical,
-            Direction::Vertical => Direction::Horizontal,
-        };
-
-        // 5. 对每个主区域再按交叉轴方向细分，实现嵌套布局
-        for (area, constraint) in areas
-            .iter()
-            .zip(self.children.get_constraints(rev_direction))
-        {
-            let area = Layout::new(rev_direction, [constraint]).split(*area)[0];
-            children_areas.push(area);
-        }
-
-        // 6. 递归渲染所有子组件
+        // 4. 递归渲染所有子组件
         for (child, child_area) in self.children.iter().zip(children_areas) {
-            child.draw(frame, child_area);
+            drawer.area = child_area;
+            child.draw(drawer);
         }
     }
 }
