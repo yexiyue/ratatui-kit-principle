@@ -1,3 +1,3 @@
-mod component;
-mod props;
-mod render;
+pub mod component;
+pub mod props;
+pub mod render;

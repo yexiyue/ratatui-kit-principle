@@ -1,77 +1,147 @@
-use crossterm::event::{Event, EventStream, KeyCode, KeyModifiers};
-use futures::StreamExt;
+// 引入 ratatui 相关模块
 use ratatui::{
-    layout::{Constraint, Layout},
+    layout::{Constraint, Direction},
     style::{Style, Stylize},
-    text::Line,
-    widgets::{Block, Borders, Paragraph},
+    widgets::{Block, Paragraph},
 };
+// 引入 ratatui-kit-principle 组件系统相关模块
+use ratatui_kit_principle::{
+    component::{
+        Component,
+        component_helper::ComponentHelper,
+        instantiated_component::{Components, InstantiatedComponent},
+    },
+    props::AnyProps,
+    render::{drawer::ComponentDrawer, layout_style::LayoutStyle, tree::Tree},
+};
+
 use std::io;
 
-fn render_title() -> Line<'static> {
-    Line::from("Counter Application")
-        .style(Style::default().bold().light_blue())
-        .centered()
+// 文本组件，负责渲染一段文本
+pub struct Text {
+    pub text: String,
+    pub style: Style,
+    pub alignment: ratatui::layout::Alignment,
 }
 
-fn render_count(count: i32) -> Paragraph<'static> {
-    Paragraph::new(format!("Count: {}", count).light_green()).centered()
+// 文本组件的 Props
+pub struct TextProps<'a> {
+    pub text: &'a str,
+    pub style: Style,
+    pub alignment: ratatui::layout::Alignment,
 }
 
-fn render_info() -> Line<'static> {
-    Line::from("Press q or Ctrl+C to quit, + to increase, - to decrease")
-        .style(Style::default().yellow())
-        .centered()
-}
+// Text 组件实现 Component 协议
+impl Component for Text {
+    type Props<'a> = TextProps<'a>;
 
-#[tokio::main]
-async fn main() -> io::Result<()> {
-    let mut terminal = ratatui::init();
-    let mut event_stream = EventStream::new();
-    let mut count = 0;
-
-    loop {
-        terminal.draw(|f| {
-            let area = f.area();
-
-            let block = Block::default()
-                .borders(Borders::ALL)
-                .border_style(Style::default().blue());
-
-            let inner_area = block.inner(area);
-
-            let title = render_title();
-            let text = render_count(count);
-            let info = render_info();
-
-            let [top, body, bottom] = Layout::vertical([
-                Constraint::Length(1),
-                Constraint::Fill(1),
-                Constraint::Length(1),
-            ])
-            .spacing(1)
-            .areas(inner_area);
-
-            f.render_widget(block, area);
-            f.render_widget(title, top);
-            f.render_widget(text, body);
-            f.render_widget(info, bottom);
-        })?;
-
-        if let Some(Ok(event)) = event_stream.next().await {
-            if let Event::Key(key) = event {
-                match key.code {
-                    KeyCode::Char('q') => break,
-                    KeyCode::Char('+') => count += 1,
-                    KeyCode::Char('-') => count -= 1,
-                    KeyCode::Left => count -= 1,
-                    KeyCode::Right => count += 1,
-                    KeyCode::Char('c') if key.modifiers.contains(KeyModifiers::CONTROL) => break,
-                    _ => {}
-                }
-            }
+    fn new(props: &Self::Props<'_>) -> Self {
+        Self {
+            text: props.text.to_string(),
+            style: props.style,
+            alignment: props.alignment,
         }
     }
-    ratatui::restore();
+
+    fn draw(&self, drawer: &mut ComponentDrawer<'_, '_>) {
+        // 渲染段落文本
+        let paragraph = Paragraph::new(self.text.clone())
+            .style(self.style)
+            .alignment(self.alignment);
+        drawer.render_widget(paragraph, drawer.area);
+    }
+}
+
+// 边框组件，负责为内容添加边框
+pub struct Border {
+    pub border_style: Style,
+}
+
+// Border 组件实现 Component 协议
+impl Component for Border {
+    type Props<'a> = Style;
+
+    fn new(props: &Self::Props<'_>) -> Self {
+        Self {
+            border_style: props.clone(),
+        }
+    }
+
+    fn draw(&self, drawer: &mut ComponentDrawer<'_, '_>) {
+        // 绘制带样式的边框
+        let block = Block::bordered().border_style(self.border_style);
+        let inner_area = block.inner(drawer.area);
+
+        drawer.render_widget(block, drawer.area);
+
+        // 更新 drawer 的可用区域为边框内部
+        drawer.area = inner_area;
+    }
+}
+
+// 主程序入口，构建组件树并启动渲染循环
+#[tokio::main]
+async fn main() -> io::Result<()> {
+    let count = 0;
+
+    // 构建根组件（带边框的容器），并嵌套多个子组件
+    let instantiated_component = InstantiatedComponent::new(
+        AnyProps::owned(Style::default().blue()),
+        ComponentHelper::<Border>::boxed(),
+        LayoutStyle {
+            gap: 3,
+            flex_direction: Direction::Vertical,
+            ..Default::default()
+        },
+        Components {
+            components: vec![
+                // 标题文本
+                InstantiatedComponent::new(
+                    AnyProps::owned(TextProps {
+                        text: "Welcome to the Counter App",
+                        style: Style::default().bold().light_blue(),
+                        alignment: ratatui::layout::Alignment::Center,
+                    }),
+                    ComponentHelper::<Text>::boxed(),
+                    LayoutStyle {
+                        height: Constraint::Length(1),
+                        ..Default::default()
+                    },
+                    Components::default(),
+                ),
+                // 计数显示
+                InstantiatedComponent::new(
+                    AnyProps::owned(TextProps {
+                        text: &format!("Count: {}", count),
+                        style: Style::default().light_green(),
+                        alignment: ratatui::layout::Alignment::Center,
+                    }),
+                    ComponentHelper::<Text>::boxed(),
+                    LayoutStyle {
+                        height: Constraint::Fill(1),
+                        ..Default::default()
+                    },
+                    Components::default(),
+                ),
+                // 操作提示
+                InstantiatedComponent::new(
+                    AnyProps::owned(TextProps {
+                        text: "Press q or Ctrl+C to quit, + to increase, - to decrease",
+                        style: Style::default().yellow(),
+                        alignment: ratatui::layout::Alignment::Center,
+                    }),
+                    ComponentHelper::<Text>::boxed(),
+                    LayoutStyle {
+                        height: Constraint::Length(1),
+                        ..Default::default()
+                    },
+                    Components::default(),
+                ),
+            ],
+        },
+    );
+
+    // 启动组件树的渲染主循环
+    Tree::new(instantiated_component).render_loop().await?;
     Ok(())
 }

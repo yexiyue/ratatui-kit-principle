@@ -13,7 +13,7 @@ pub trait ComponentHelperExt {
 }
 
 // 通用组件辅助结构体，用于泛型组件的构造和管理
-pub(crate) struct ComponentHelper<T> {
+pub struct ComponentHelper<T> {
     // 使用 PhantomData 标记泛型参数 T
     _marker: std::marker::PhantomData<T>,
 }

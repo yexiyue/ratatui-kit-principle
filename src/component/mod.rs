@@ -7,8 +7,8 @@ use crate::{
     render::{drawer::ComponentDrawer, layout_style::LayoutStyle},
 };
 
-mod component_helper;
-mod instantiated_component;
+pub mod component_helper;
+pub mod instantiated_component;
 
 pub trait Component: Any {
     type Props<'a>

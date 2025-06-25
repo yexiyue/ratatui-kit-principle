@@ -26,7 +26,7 @@ pub struct AnyProps<'a> {
 }
 
 impl<'a> AnyProps<'a> {
-    pub(crate) fn owned<T: 'a>(props: T) -> Self {
+    pub fn owned<T: 'a>(props: T) -> Self {
         // 将堆分配的值转换为原始指针，用于手动内存管理
         let raw = Box::into_raw(Box::new(props));
 
@@ -41,7 +41,7 @@ impl<'a> AnyProps<'a> {
         }
     }
 
-    pub(crate) fn borrowed<T>(props: &'a mut T) -> Self {
+    pub fn borrowed<T>(props: &'a mut T) -> Self {
         // 创建一个不负责内存释放的 AnyProps 实例
         // 用于持有对 T 类型数据的引用
         Self {
@@ -58,7 +58,7 @@ impl<'a> AnyProps<'a> {
 
     // 创建一个新的 AnyProps 实例，共享当前实例的 raw 指针
     // 不获取所有权，也不负责释放内存
-    pub(crate) fn borrow(&mut self) -> Self {
+    pub fn borrow(&mut self) -> Self {
         Self {
             raw: self.raw,
             drop: None, // 不负责内存释放
