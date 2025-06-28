@@ -1,6 +1,9 @@
+use std::any::TypeId;
+
 use crate::{
     component::{AnyComponent, Component},
     props::AnyProps,
+    render::updater::ComponentUpdater,
 };
 
 // 定义一个扩展 trait，用于创建和复制组件辅助对象
@@ -10,6 +13,15 @@ pub trait ComponentHelperExt {
 
     // 创建当前组件辅助对象的一个副本
     fn copy(&self) -> Box<dyn ComponentHelperExt>;
+
+    fn update_component(
+        &self,
+        component: &mut Box<dyn AnyComponent>,
+        props: AnyProps,
+        updater: &mut ComponentUpdater,
+    );
+
+    fn component_type_id(&self) -> TypeId;
 }
 
 // 通用组件辅助结构体，用于泛型组件的构造和管理
@@ -45,5 +57,18 @@ where
     // 创建当前组件辅助对象的新副本
     fn copy(&self) -> Box<dyn ComponentHelperExt> {
         Self::boxed()
+    }
+
+    fn update_component(
+        &self,
+        component: &mut Box<dyn AnyComponent>,
+        props: AnyProps,
+        updater: &mut ComponentUpdater,
+    ) {
+        component.update(props, updater);
+    }
+
+    fn component_type_id(&self) -> TypeId {
+        TypeId::of::<T>()
     }
 }

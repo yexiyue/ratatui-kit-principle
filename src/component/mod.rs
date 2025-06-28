@@ -4,7 +4,8 @@ use ratatui::layout::{Direction, Layout};
 
 use crate::{
     component::instantiated_component::Components,
-    render::{drawer::ComponentDrawer, layout_style::LayoutStyle},
+    props::AnyProps,
+    render::{drawer::ComponentDrawer, layout_style::LayoutStyle, updater::ComponentUpdater},
 };
 
 pub mod component_helper;
@@ -17,7 +18,7 @@ pub trait Component: Any {
 
     fn new(props: &Self::Props<'_>) -> Self;
 
-    fn draw(&self, drawer: &mut ComponentDrawer<'_, '_>) {}
+    fn draw(&self, _drawer: &mut ComponentDrawer<'_, '_>) {}
 
     // 默认使用flex布局计算子组件的area
     fn calc_children_areas(
@@ -45,9 +46,11 @@ pub trait Component: Any {
 
         children_areas
     }
+
+    fn update(&mut self, _props: &mut Self::Props<'_>, _updater: &mut ComponentUpdater<'_>) {}
 }
 
-pub trait AnyComponent {
+pub trait AnyComponent: Any {
     fn draw(&self, drawer: &mut ComponentDrawer<'_, '_>);
 
     fn calc_children_areas(
@@ -56,6 +59,8 @@ pub trait AnyComponent {
         layout_style: &LayoutStyle,
         drawer: &mut ComponentDrawer<'_, '_>,
     ) -> Vec<ratatui::prelude::Rect>;
+
+    fn update(&mut self, props: AnyProps, updater: &mut ComponentUpdater<'_>);
 }
 
 // 为所有实现了 Component trait 的类型自动实现 AnyComponent trait
@@ -75,5 +80,9 @@ where
         drawer: &mut ComponentDrawer<'_, '_>,
     ) -> Vec<ratatui::prelude::Rect> {
         Component::calc_children_areas(self, children, layout_style, drawer)
+    }
+
+    fn update(&mut self, mut props: AnyProps, updater: &mut ComponentUpdater<'_>) {
+        Component::update(self, unsafe { props.downcast_mut_unchecked() }, updater);
     }
 }

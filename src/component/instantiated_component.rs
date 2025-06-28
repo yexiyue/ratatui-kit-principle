@@ -3,12 +3,15 @@ use ratatui::layout::{Constraint, Direction};
 use super::component_helper::ComponentHelperExt;
 use crate::{
     component::AnyComponent,
+    element::key::ElementKey,
+    multimap::RemoveOnlyMultimap,
     props::AnyProps,
-    render::{drawer::ComponentDrawer, layout_style::LayoutStyle},
+    render::{drawer::ComponentDrawer, layout_style::LayoutStyle, updater::ComponentUpdater},
 };
 use std::ops::{Deref, DerefMut};
 
 pub struct InstantiatedComponent {
+    key: ElementKey,
     component: Box<dyn AnyComponent>,
     children: Components,
     helper: Box<dyn ComponentHelperExt>,
@@ -16,19 +19,15 @@ pub struct InstantiatedComponent {
 }
 
 impl InstantiatedComponent {
-    pub fn new(
-        mut props: AnyProps,
-        helper: Box<dyn ComponentHelperExt>,
-        layout_style: LayoutStyle,
-        children: Components,
-    ) -> Self {
+    pub fn new(key: ElementKey, mut props: AnyProps, helper: Box<dyn ComponentHelperExt>) -> Self {
         let component = helper.new_component(props.borrow());
 
         Self {
+            key,
             component,
-            children,
             helper,
-            layout_style,
+            children: Components::default(),
+            layout_style: LayoutStyle::default(),
         }
     }
 
@@ -53,15 +52,27 @@ impl InstantiatedComponent {
             child.draw(drawer);
         }
     }
+
+    pub fn update(&mut self, props: AnyProps) {
+        let mut updater =
+            ComponentUpdater::new(self.key.clone(), &mut self.children, &mut self.layout_style);
+
+        self.helper
+            .update_component(&mut self.component, props, &mut updater);
+    }
+
+    pub fn component(&self) -> &dyn AnyComponent {
+        &*self.component
+    }
 }
 
 #[derive(Default)]
 pub struct Components {
-    pub components: Vec<InstantiatedComponent>,
+    pub components: RemoveOnlyMultimap<ElementKey, InstantiatedComponent>,
 }
 
 impl Deref for Components {
-    type Target = Vec<InstantiatedComponent>;
+    type Target = RemoveOnlyMultimap<ElementKey, InstantiatedComponent>;
 
     fn deref(&self) -> &Self::Target {
         &self.components

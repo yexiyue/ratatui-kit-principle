@@ -4,19 +4,34 @@ use crossterm::event::{Event, EventStream, KeyCode, KeyModifiers};
 use futures::StreamExt;
 
 use crate::{
-    component::instantiated_component::InstantiatedComponent, render::drawer::ComponentDrawer,
+    component::{
+        component_helper::ComponentHelperExt, instantiated_component::InstantiatedComponent,
+    },
+    element::{ElementExt, key::ElementKey},
+    props::AnyProps,
+    render::drawer::ComponentDrawer,
 };
 
-pub struct Tree {
+pub struct Tree<'a> {
     root_component: InstantiatedComponent,
+    props: AnyProps<'a>,
 }
 
-impl Tree {
-    pub fn new(root_component: InstantiatedComponent) -> Self {
-        Self { root_component }
+impl<'a> Tree<'a> {
+    pub fn new(mut props: AnyProps<'a>, helper: Box<dyn ComponentHelperExt>) -> Self {
+        Self {
+            root_component: InstantiatedComponent::new(
+                ElementKey::new("__root__"),
+                props.borrow(),
+                helper,
+            ),
+            props,
+        }
     }
 
-    pub fn render(&self, terminal: &mut ratatui::DefaultTerminal) -> io::Result<()> {
+    pub fn render(&mut self, terminal: &mut ratatui::DefaultTerminal) -> io::Result<()> {
+        self.root_component.update(self.props.borrow());
+
         terminal.draw(|frame| {
             let area = frame.area();
             let mut drawer = ComponentDrawer::new(frame, area);
@@ -26,7 +41,7 @@ impl Tree {
         Ok(())
     }
 
-    pub async fn render_loop(&self) -> io::Result<()> {
+    pub async fn render_loop(&mut self) -> io::Result<()> {
         let mut terminal = ratatui::init();
         let mut event_stream = EventStream::new();
         loop {
@@ -47,4 +62,12 @@ impl Tree {
         ratatui::restore();
         Ok(())
     }
+}
+
+pub(crate) async fn render_loop<E: ElementExt>(mut element: E) -> io::Result<()> {
+    let helper = element.helper();
+    let mut tree = Tree::new(element.props_mut(), helper);
+
+    tree.render_loop().await?;
+    Ok(())
 }

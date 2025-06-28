@@ -1,18 +1,14 @@
 // 引入 ratatui 相关模块
 use ratatui::{
-    layout::{Constraint, Direction},
+    layout::{Constraint, Direction, Flex, Margin, Offset},
     style::{Style, Stylize},
     widgets::{Block, Paragraph},
 };
 // 引入 ratatui-kit-principle 组件系统相关模块
 use ratatui_kit_principle::{
-    component::{
-        Component,
-        component_helper::ComponentHelper,
-        instantiated_component::{Components, InstantiatedComponent},
-    },
-    props::AnyProps,
-    render::{drawer::ComponentDrawer, layout_style::LayoutStyle, tree::Tree},
+    component::Component,
+    element::{AnyElement, Element, ElementExt, key::ElementKey},
+    render::{drawer::ComponentDrawer, layout_style::LayoutStyle},
 };
 
 use std::io;
@@ -79,69 +75,129 @@ impl Component for Border {
     }
 }
 
+#[derive(Default)]
+pub struct ViewProps<'a> {
+    /// 主轴方向（横向/纵向）
+    pub flex_direction: Direction,
+    /// 主轴对齐方式（如 Start, End, Center, SpaceBetween 等）
+    pub justify_content: Flex,
+    /// 子项间距
+    pub gap: i32,
+    /// 外边距
+    pub margin: Margin,
+    /// 偏移量
+    pub offset: Offset,
+    /// 宽度约束
+    pub width: Constraint,
+    /// 高度约束
+    pub height: Constraint,
+
+    pub children: Vec<AnyElement<'a>>,
+}
+
+pub struct View;
+
+impl Component for View {
+    type Props<'a> = ViewProps<'a>;
+
+    fn new(_props: &Self::Props<'_>) -> Self {
+        Self
+    }
+
+    fn update(
+        &mut self,
+        props: &mut Self::Props<'_>,
+        updater: &mut ratatui_kit_principle::render::updater::ComponentUpdater<'_>,
+    ) {
+        updater.set_layout_style(LayoutStyle {
+            flex_direction: props.flex_direction,
+            justify_content: props.justify_content,
+            gap: props.gap,
+            margin: props.margin,
+            offset: props.offset,
+            width: props.width,
+            height: props.height,
+        });
+
+        updater.update_children(props.children.iter_mut());
+    }
+}
+
 // 主程序入口，构建组件树并启动渲染循环
 #[tokio::main]
 async fn main() -> io::Result<()> {
     let count = 0;
 
-    // 构建根组件（带边框的容器），并嵌套多个子组件
-    let instantiated_component = InstantiatedComponent::new(
-        AnyProps::owned(Style::default().blue()),
-        ComponentHelper::<Border>::boxed(),
-        LayoutStyle {
-            gap: 3,
-            flex_direction: Direction::Vertical,
-            ..Default::default()
-        },
-        Components {
-            components: vec![
-                // 标题文本
-                InstantiatedComponent::new(
-                    AnyProps::owned(TextProps {
-                        text: "Welcome to the Counter App",
-                        style: Style::default().bold().light_blue(),
-                        alignment: ratatui::layout::Alignment::Center,
-                    }),
-                    ComponentHelper::<Text>::boxed(),
-                    LayoutStyle {
+    let counter_text = format!("Count: {}", count);
+
+    let mut element = Element::<View> {
+        key: ElementKey::new("root"),
+        props: ViewProps {
+            children: vec![
+                Element::<View> {
+                    key: ElementKey::new("header"),
+                    props: ViewProps {
+                        children: vec![
+                            Element::<Text> {
+                                key: ElementKey::new("title"),
+                                props: TextProps {
+                                    text: "Welcome to the Counter App",
+                                    style: Style::default().bold().light_blue(),
+                                    alignment: ratatui::layout::Alignment::Center,
+                                },
+                            }
+                            .into(),
+                        ],
                         height: Constraint::Length(1),
                         ..Default::default()
                     },
-                    Components::default(),
-                ),
-                // 计数显示
-                InstantiatedComponent::new(
-                    AnyProps::owned(TextProps {
-                        text: &format!("Count: {}", count),
-                        style: Style::default().light_green(),
-                        alignment: ratatui::layout::Alignment::Center,
-                    }),
-                    ComponentHelper::<Text>::boxed(),
-                    LayoutStyle {
+                }
+                .into(),
+                Element::<View> {
+                    key: ElementKey::new("body"),
+                    props: ViewProps {
+                        children: vec![
+                            Element::<Text> {
+                                key: ElementKey::new("number"),
+                                props: TextProps {
+                                    text: counter_text.as_str(),
+                                    style: Style::default().light_green(),
+                                    alignment: ratatui::layout::Alignment::Center,
+                                },
+                            }
+                            .into(),
+                        ],
                         height: Constraint::Fill(1),
                         ..Default::default()
                     },
-                    Components::default(),
-                ),
-                // 操作提示
-                InstantiatedComponent::new(
-                    AnyProps::owned(TextProps {
-                        text: "Press q or Ctrl+C to quit, + to increase, - to decrease",
-                        style: Style::default().yellow(),
-                        alignment: ratatui::layout::Alignment::Center,
-                    }),
-                    ComponentHelper::<Text>::boxed(),
-                    LayoutStyle {
+                }
+                .into(),
+                Element::<View> {
+                    key: ElementKey::new("footer"),
+                    props: ViewProps {
+                        children: vec![
+                            Element::<Text> {
+                                key: ElementKey::new("info"),
+                                props: TextProps {
+                                    text: "Press q or Ctrl+C to quit, + to increase, - to decrease",
+                                    style: Style::default().yellow(),
+                                    alignment: ratatui::layout::Alignment::Center,
+                                },
+                            }
+                            .into(),
+                        ],
                         height: Constraint::Length(1),
                         ..Default::default()
                     },
-                    Components::default(),
-                ),
+                }
+                .into(),
             ],
+            flex_direction: Direction::Vertical,
+            gap: 3,
+            ..Default::default()
         },
-    );
+    };
 
-    // 启动组件树的渲染主循环
-    Tree::new(instantiated_component).render_loop().await?;
+    element.render_loop().await?;
     Ok(())
 }
