@@ -45,8 +45,13 @@ impl<'a> Tree<'a> {
         let mut terminal = ratatui::init();
         let mut event_stream = EventStream::new();
         loop {
+            // 渲染 UI
             self.render(&mut terminal)?;
 
+            // 等待组件树有状态变更（如 Hook、子组件等），避免无效刷新，提高性能
+            self.root_component.wait().await;
+
+            // 监听并处理用户输入事件
             if let Some(Ok(event)) = event_stream.next().await {
                 if let Event::Key(key) = event {
                     match key.code {

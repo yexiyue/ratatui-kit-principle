@@ -4,6 +4,7 @@ use ratatui::layout::{Direction, Layout};
 
 use crate::{
     component::instantiated_component::Components,
+    hooks::Hooks,
     props::AnyProps,
     render::{drawer::ComponentDrawer, layout_style::LayoutStyle, updater::ComponentUpdater},
 };
@@ -47,7 +48,13 @@ pub trait Component: Any {
         children_areas
     }
 
-    fn update(&mut self, _props: &mut Self::Props<'_>, _updater: &mut ComponentUpdater<'_>) {}
+    fn update(
+        &mut self,
+        _props: &mut Self::Props<'_>,
+        _hooks: Hooks,
+        _updater: &mut ComponentUpdater<'_>,
+    ) {
+    }
 }
 
 pub trait AnyComponent: Any {
@@ -60,7 +67,7 @@ pub trait AnyComponent: Any {
         drawer: &mut ComponentDrawer<'_, '_>,
     ) -> Vec<ratatui::prelude::Rect>;
 
-    fn update(&mut self, props: AnyProps, updater: &mut ComponentUpdater<'_>);
+    fn update(&mut self, props: AnyProps, hooks: Hooks, updater: &mut ComponentUpdater<'_>);
 }
 
 // 为所有实现了 Component trait 的类型自动实现 AnyComponent trait
@@ -82,7 +89,12 @@ where
         Component::calc_children_areas(self, children, layout_style, drawer)
     }
 
-    fn update(&mut self, mut props: AnyProps, updater: &mut ComponentUpdater<'_>) {
-        Component::update(self, unsafe { props.downcast_mut_unchecked() }, updater);
+    fn update(&mut self, mut props: AnyProps, hooks: Hooks, updater: &mut ComponentUpdater<'_>) {
+        Component::update(
+            self,
+            unsafe { props.downcast_mut_unchecked() },
+            hooks,
+            updater,
+        );
     }
 }
