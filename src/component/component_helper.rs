@@ -2,6 +2,7 @@ use std::any::TypeId;
 
 use crate::{
     component::{AnyComponent, Component},
+    hooks::Hooks,
     props::AnyProps,
     render::updater::ComponentUpdater,
 };
@@ -18,6 +19,7 @@ pub trait ComponentHelperExt {
         &self,
         component: &mut Box<dyn AnyComponent>,
         props: AnyProps,
+        hooks: Hooks,
         updater: &mut ComponentUpdater,
     );
 
@@ -63,9 +65,10 @@ where
         &self,
         component: &mut Box<dyn AnyComponent>,
         props: AnyProps,
+        hooks: Hooks,
         updater: &mut ComponentUpdater,
     ) {
-        component.update(props, updater);
+        component.update(props, hooks, updater);
     }
 
     fn component_type_id(&self) -> TypeId {

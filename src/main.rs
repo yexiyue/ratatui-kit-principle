@@ -8,6 +8,7 @@ use ratatui::{
 use ratatui_kit_principle::{
     component::Component,
     element::{AnyElement, Element, ElementExt, key::ElementKey},
+    hooks,
     render::{drawer::ComponentDrawer, layout_style::LayoutStyle},
 };
 
@@ -107,6 +108,7 @@ impl Component for View {
     fn update(
         &mut self,
         props: &mut Self::Props<'_>,
+        hooks: hooks::Hooks,
         updater: &mut ratatui_kit_principle::render::updater::ComponentUpdater<'_>,
     ) {
         updater.set_layout_style(LayoutStyle {
