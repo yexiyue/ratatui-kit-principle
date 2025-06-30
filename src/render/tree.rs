@@ -1,7 +1,7 @@
 use std::io;
 
 use crossterm::event::{Event, EventStream, KeyCode, KeyModifiers};
-use futures::StreamExt;
+use futures::{FutureExt, StreamExt, select};
 
 use crate::{
     component::{
@@ -48,18 +48,24 @@ impl<'a> Tree<'a> {
             // 渲染 UI
             self.render(&mut terminal)?;
 
-            // 等待组件树有状态变更（如 Hook、子组件等），避免无效刷新，提高性能
-            self.root_component.wait().await;
+            select! {
+                _ = self.root_component.wait().fuse()=>{
 
-            // 监听并处理用户输入事件
-            if let Some(Ok(event)) = event_stream.next().await {
-                if let Event::Key(key) = event {
-                    match key.code {
-                        KeyCode::Char('q') => break,
-                        KeyCode::Char('c') if key.modifiers.contains(KeyModifiers::CONTROL) => {
-                            break;
+                }
+                event = event_stream.next().fuse()=>{
+                    match event {
+                        Some(Ok(event)) => {
+                            if let Event::Key(key) = event {
+                                match key.code {
+                                    KeyCode::Char('q') => break,
+                                    KeyCode::Char('c') if key.modifiers.contains(KeyModifiers::CONTROL) => {
+                                        break;
+                                    }
+                                    _ => {}
+                                }
+                            }
                         }
-                        _ => {}
+                        _ => break,
                     }
                 }
             }

@@ -8,7 +8,7 @@ use ratatui::{
 use ratatui_kit_principle::{
     component::Component,
     element::{AnyElement, Element, ElementExt, key::ElementKey},
-    hooks,
+    hooks::{self, use_future::UseFuture, use_state::UseState},
     render::{drawer::ComponentDrawer, layout_style::LayoutStyle},
 };
 
@@ -40,6 +40,19 @@ impl Component for Text {
         }
     }
 
+    fn update(
+        &mut self,
+        props: &mut Self::Props<'_>,
+        _hooks: hooks::Hooks,
+        _updater: &mut ratatui_kit_principle::render::updater::ComponentUpdater<'_>,
+    ) {
+        *self = Self {
+            text: props.text.to_string(),
+            style: props.style,
+            alignment: props.alignment,
+        };
+    }
+
     fn draw(&self, drawer: &mut ComponentDrawer<'_, '_>) {
         // 渲染段落文本
         let paragraph = Paragraph::new(self.text.clone())
@@ -62,6 +75,15 @@ impl Component for Border {
         Self {
             border_style: props.clone(),
         }
+    }
+
+    fn update(
+        &mut self,
+        props: &mut Self::Props<'_>,
+        _hooks: hooks::Hooks,
+        _updater: &mut ratatui_kit_principle::render::updater::ComponentUpdater<'_>,
+    ) {
+        self.border_style = props.clone();
     }
 
     fn draw(&self, drawer: &mut ComponentDrawer<'_, '_>) {
@@ -108,7 +130,7 @@ impl Component for View {
     fn update(
         &mut self,
         props: &mut Self::Props<'_>,
-        hooks: hooks::Hooks,
+        _hooks: hooks::Hooks,
         updater: &mut ratatui_kit_principle::render::updater::ComponentUpdater<'_>,
     ) {
         updater.set_layout_style(LayoutStyle {
@@ -128,56 +150,87 @@ impl Component for View {
 // 主程序入口，构建组件树并启动渲染循环
 #[tokio::main]
 async fn main() -> io::Result<()> {
-    let count = 0;
+    let mut element = Element::<Counter> {
+        key: ElementKey::new("counter_app"),
+        props: (),
+    };
 
-    let counter_text = format!("Count: {}", count);
+    element.render_loop().await?;
+    Ok(())
+}
 
-    let mut element = Element::<View> {
-        key: ElementKey::new("root"),
-        props: ViewProps {
-            children: vec![
-                Element::<View> {
-                    key: ElementKey::new("header"),
-                    props: ViewProps {
-                        children: vec![
-                            Element::<Text> {
-                                key: ElementKey::new("title"),
-                                props: TextProps {
-                                    text: "Welcome to the Counter App",
-                                    style: Style::default().bold().light_blue(),
-                                    alignment: ratatui::layout::Alignment::Center,
-                                },
-                            }
-                            .into(),
-                        ],
-                        height: Constraint::Length(1),
-                        ..Default::default()
-                    },
-                }
-                .into(),
-                Element::<View> {
-                    key: ElementKey::new("body"),
-                    props: ViewProps {
-                        children: vec![
-                            Element::<Text> {
-                                key: ElementKey::new("number"),
-                                props: TextProps {
-                                    text: counter_text.as_str(),
-                                    style: Style::default().light_green(),
-                                    alignment: ratatui::layout::Alignment::Center,
-                                },
-                            }
-                            .into(),
-                        ],
-                        height: Constraint::Fill(1),
-                        ..Default::default()
-                    },
-                }
-                .into(),
-                Element::<View> {
-                    key: ElementKey::new("footer"),
-                    props: ViewProps {
-                        children: vec![
+pub struct Counter;
+
+impl Component for Counter {
+    type Props<'a> = ();
+    fn new(_props: &Self::Props<'_>) -> Self {
+        Counter
+    }
+
+    fn update(
+        &mut self,
+        _props: &mut Self::Props<'_>,
+        mut hooks: hooks::Hooks,
+        updater: &mut ratatui_kit_principle::render::updater::ComponentUpdater<'_>,
+    ) {
+        let mut state = hooks.use_state(|| 0);
+
+        hooks.use_future(async move {
+            loop {
+                // 模拟异步操作，比如从服务器获取数据
+                tokio::time::sleep(std::time::Duration::from_secs(1)).await;
+                state.set(state.get() + 1); // 更新状态
+            }
+        });
+
+        let counter_text = format!("Count: {}", state.get());
+
+        let element = Element::<View> {
+            key: ElementKey::new("root"),
+            props: ViewProps {
+                children: vec![
+                    Element::<View> {
+                        key: ElementKey::new("header"),
+                        props: ViewProps {
+                            children: vec![
+                                Element::<Text> {
+                                    key: ElementKey::new("title"),
+                                    props: TextProps {
+                                        text: "Welcome to the Counter App",
+                                        style: Style::default().bold().light_blue(),
+                                        alignment: ratatui::layout::Alignment::Center,
+                                    },
+                                }
+                                .into(),
+                            ],
+                            height: Constraint::Length(1),
+                            ..Default::default()
+                        },
+                    }
+                    .into(),
+                    Element::<View> {
+                        key: ElementKey::new("body"),
+                        props: ViewProps {
+                            children: vec![
+                                Element::<Text> {
+                                    key: ElementKey::new("number"),
+                                    props: TextProps {
+                                        text: counter_text.as_str(),
+                                        style: Style::default().light_green(),
+                                        alignment: ratatui::layout::Alignment::Center,
+                                    },
+                                }
+                                .into(),
+                            ],
+                            height: Constraint::Fill(1),
+                            ..Default::default()
+                        },
+                    }
+                    .into(),
+                    Element::<View> {
+                        key: ElementKey::new("footer"),
+                        props: ViewProps {
+                            children: vec![
                             Element::<Text> {
                                 key: ElementKey::new("info"),
                                 props: TextProps {
@@ -188,18 +241,18 @@ async fn main() -> io::Result<()> {
                             }
                             .into(),
                         ],
-                        height: Constraint::Length(1),
-                        ..Default::default()
-                    },
-                }
-                .into(),
-            ],
-            flex_direction: Direction::Vertical,
-            gap: 3,
-            ..Default::default()
-        },
-    };
+                            height: Constraint::Length(1),
+                            ..Default::default()
+                        },
+                    }
+                    .into(),
+                ],
+                flex_direction: Direction::Vertical,
+                gap: 3,
+                ..Default::default()
+            },
+        };
 
-    element.render_loop().await?;
-    Ok(())
+        updater.update_children([element]);
+    }
 }
