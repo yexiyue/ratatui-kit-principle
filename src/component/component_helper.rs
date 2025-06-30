@@ -1,4 +1,4 @@
-use std::any::TypeId;
+use std::any::{Any, TypeId};
 
 use crate::{
     component::{AnyComponent, Component},
@@ -8,7 +8,7 @@ use crate::{
 };
 
 // 定义一个扩展 trait，用于创建和复制组件辅助对象
-pub trait ComponentHelperExt {
+pub trait ComponentHelperExt: Any + Send + Sync {
     // 使用类型擦除的 AnyProps 创建一个新的组件实例
     fn new_component(&self, props: AnyProps) -> Box<dyn AnyComponent>;
 

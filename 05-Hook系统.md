@@ -332,4 +332,4 @@ graph TD
 
 本节我们梳理了 Ratatui Kit 的 Hook 系统原理和实现方式，讲解了 Hook trait、类型擦除、批量管理、与组件更新和渲染循环的结合。Hook 系统为后续实现更强大的状态管理能力打下了基础。
 
-下一节将正式介绍“状态管理”机制，带你实现 use_state、use_future 等常用 Hook，让终端 UI 组件拥有真正的响应式状态，敬请期待！
+下一节将介绍“状态管理”机制，带你实现 use_state、use_future 等常用 Hook，让终端 UI 组件拥有真正的响应式状态，敬请期待！
