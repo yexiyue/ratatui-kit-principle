@@ -9,6 +9,7 @@ use crate::{
     multimap::RemoveOnlyMultimap,
     props::AnyProps,
     render::{drawer::ComponentDrawer, layout_style::LayoutStyle, updater::ComponentUpdater},
+    terminal::Terminal,
 };
 use std::{
     ops::{Deref, DerefMut},
@@ -68,10 +69,14 @@ impl InstantiatedComponent {
     }
 
     /// 更新当前组件及其子组件的状态，驱动 Hook 生命周期和属性变更
-    pub fn update(&mut self, props: AnyProps) {
+    pub fn update(&mut self, props: AnyProps, terminal: &mut Terminal) {
         // 构造组件更新辅助器，便于管理子组件和布局
-        let mut updater =
-            ComponentUpdater::new(self.key.clone(), &mut self.children, &mut self.layout_style);
+        let mut updater = ComponentUpdater::new(
+            self.key.clone(),
+            &mut self.children,
+            &mut self.layout_style,
+            terminal,
+        );
 
         // 更新前调用所有 Hook 的 pre_component_update 钩子
         self.hooks.pre_component_update(&mut updater);

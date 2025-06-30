@@ -3,12 +3,14 @@ use crate::{
     element::{ElementExt, key::ElementKey},
     multimap::AppendOnlyMultimap,
     render::layout_style::LayoutStyle,
+    terminal::Terminal,
 };
 
 pub struct ComponentUpdater<'a> {
     key: ElementKey,
     components: &'a mut Components,
     layout_style: &'a mut LayoutStyle,
+    terminal: &'a mut Terminal,
 }
 
 impl<'a> ComponentUpdater<'a> {
@@ -16,12 +18,18 @@ impl<'a> ComponentUpdater<'a> {
         key: ElementKey,
         components: &'a mut Components,
         layout_style: &'a mut LayoutStyle,
+        terminal: &'a mut Terminal,
     ) -> Self {
         Self {
             key,
             components,
             layout_style,
+            terminal,
         }
+    }
+
+    pub fn terminal(&mut self) -> &mut Terminal {
+        self.terminal
     }
 
     /// 获取当前组件的唯一标识 key。
@@ -71,7 +79,7 @@ impl<'a> ComponentUpdater<'a> {
             };
 
             // 用新的 props 更新组件实例
-            component.update(child.props_mut());
+            component.update(child.props_mut(), self.terminal);
             // 将本轮用到的组件实例插入 multimap
             used_compoent.push_back(child.key().clone(), component);
         }

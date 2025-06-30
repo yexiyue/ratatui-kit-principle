@@ -1,3 +1,4 @@
+use crossterm::event::{Event, KeyCode, KeyEvent, KeyEventKind};
 // 引入 ratatui 相关模块
 use ratatui::{
     layout::{Constraint, Direction, Flex, Margin, Offset},
@@ -8,7 +9,7 @@ use ratatui::{
 use ratatui_kit_principle::{
     component::Component,
     element::{AnyElement, Element, ElementExt, key::ElementKey},
-    hooks::{self, use_future::UseFuture, use_state::UseState},
+    hooks::{self, use_events::UseEvents, use_state::UseState},
     render::{drawer::ComponentDrawer, layout_style::LayoutStyle},
 };
 
@@ -175,12 +176,21 @@ impl Component for Counter {
     ) {
         let mut state = hooks.use_state(|| 0);
 
-        hooks.use_future(async move {
-            loop {
-                // 模拟异步操作，比如从服务器获取数据
-                tokio::time::sleep(std::time::Duration::from_secs(1)).await;
-                state.set(state.get() + 1); // 更新状态
-            }
+        hooks.use_events(move |event| match event {
+            Event::Key(KeyEvent {
+                kind: KeyEventKind::Press,
+                code,
+                ..
+            }) => match code {
+                KeyCode::Up => {
+                    state.set(state.get() + 1);
+                }
+                KeyCode::Down => {
+                    state.set(state.get() - 1);
+                }
+                _ => {}
+            },
+            _ => {}
         });
 
         let counter_text = format!("Count: {}", state.get());

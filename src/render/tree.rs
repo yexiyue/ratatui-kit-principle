@@ -1,7 +1,5 @@
+use futures::{FutureExt, future::select};
 use std::io;
-
-use crossterm::event::{Event, EventStream, KeyCode, KeyModifiers};
-use futures::{FutureExt, StreamExt, select};
 
 use crate::{
     component::{
@@ -10,6 +8,7 @@ use crate::{
     element::{ElementExt, key::ElementKey},
     props::AnyProps,
     render::drawer::ComponentDrawer,
+    terminal::Terminal,
 };
 
 pub struct Tree<'a> {
@@ -29,8 +28,8 @@ impl<'a> Tree<'a> {
         }
     }
 
-    pub fn render(&mut self, terminal: &mut ratatui::DefaultTerminal) -> io::Result<()> {
-        self.root_component.update(self.props.borrow());
+    pub fn render(&mut self, terminal: &mut Terminal) -> io::Result<()> {
+        self.root_component.update(self.props.borrow(), terminal);
 
         terminal.draw(|frame| {
             let area = frame.area();
@@ -42,32 +41,20 @@ impl<'a> Tree<'a> {
     }
 
     pub async fn render_loop(&mut self) -> io::Result<()> {
-        let mut terminal = ratatui::init();
-        let mut event_stream = EventStream::new();
+        let mut terminal = Terminal::new();
+
         loop {
             // 渲染 UI
             self.render(&mut terminal)?;
 
-            select! {
-                _ = self.root_component.wait().fuse()=>{
+            if terminal.received_ctrl_c() {
+                break;
+            }
 
-                }
-                event = event_stream.next().fuse()=>{
-                    match event {
-                        Some(Ok(event)) => {
-                            if let Event::Key(key) = event {
-                                match key.code {
-                                    KeyCode::Char('q') => break,
-                                    KeyCode::Char('c') if key.modifiers.contains(KeyModifiers::CONTROL) => {
-                                        break;
-                                    }
-                                    _ => {}
-                                }
-                            }
-                        }
-                        _ => break,
-                    }
-                }
+            select(self.root_component.wait().boxed(), terminal.wait().boxed()).await;
+
+            if terminal.received_ctrl_c() {
+                break;
             }
         }
         ratatui::restore();

@@ -12,7 +12,7 @@ use crate::{
 pub mod component_helper;
 pub mod instantiated_component;
 
-pub trait Component: Any {
+pub trait Component: Any + Send + Sync {
     type Props<'a>
     where
         Self: 'a;
@@ -57,7 +57,7 @@ pub trait Component: Any {
     }
 }
 
-pub trait AnyComponent: Any {
+pub trait AnyComponent: Any + Send + Sync {
     fn draw(&self, drawer: &mut ComponentDrawer<'_, '_>);
 
     fn calc_children_areas(

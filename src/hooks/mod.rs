@@ -4,6 +4,7 @@ use std::{
     pin::Pin,
     task::{Context, Poll},
 };
+pub mod use_events;
 pub mod use_future;
 pub mod use_state;
 
