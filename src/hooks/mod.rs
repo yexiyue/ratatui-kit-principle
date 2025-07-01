@@ -1,9 +1,13 @@
-use crate::render::{drawer::ComponentDrawer, updater::ComponentUpdater};
+use crate::{
+    context::ContextStack,
+    render::{drawer::ComponentDrawer, updater::ComponentUpdater},
+};
 use std::{
     any::Any,
     pin::Pin,
     task::{Context, Poll},
 };
+pub mod use_context;
 pub mod use_events;
 pub mod use_future;
 pub mod use_state;
@@ -84,22 +88,36 @@ impl Hook for Vec<Box<dyn AnyHook>> {
 }
 
 // Hooks 结构体：管理组件中的所有 Hook 实例
-pub struct Hooks<'a> {
+pub struct Hooks<'a, 'b: 'a> {
     // 存储 Hook 的容器，生命周期与 Hooks 绑定
     hooks: &'a mut Vec<Box<dyn AnyHook>>,
     // 标记是否为首次更新（首次渲染）
     first_update: bool,
     // 当前 Hook 的索引，用于依次访问每个 Hook
     hook_index: usize,
+    pub(crate) context: Option<&'a ContextStack<'b>>,
 }
 
-impl<'a> Hooks<'a> {
+impl<'a, 'b: 'a> Hooks<'a, 'b> {
     // 创建 Hooks 管理器
     pub fn new(hooks: &'a mut Vec<Box<dyn AnyHook>>, first_update: bool) -> Self {
         Self {
             hooks,
             first_update,
             hook_index: 0,
+            context: None,
+        }
+    }
+
+    pub fn with_context_stack<'c, 'd>(
+        &'c mut self,
+        context: &'c ContextStack<'d>,
+    ) -> Hooks<'c, 'd> {
+        Hooks {
+            hooks: self.hooks,
+            first_update: self.first_update,
+            hook_index: self.hook_index,
+            context: Some(context),
         }
     }
 

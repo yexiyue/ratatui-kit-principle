@@ -8,7 +8,7 @@ use super::{Hook, Hooks};
 mod private {
     pub trait Sealed {}
 
-    impl Sealed for crate::hooks::Hooks<'_> {}
+    impl Sealed for crate::hooks::Hooks<'_, '_> {}
 }
 
 /// UseFuture trait：为 Hooks 扩展 use_future 方法
@@ -53,7 +53,7 @@ impl Hook for UseFutureImpl {
 }
 
 /// 为 Hooks 实现 UseFuture trait，便于在组件中直接调用 use_future
-impl UseFuture for Hooks<'_> {
+impl UseFuture for Hooks<'_, '_> {
     fn use_future<F>(&mut self, f: F)
     where
         F: Future<Output = ()> + Send + 'static,

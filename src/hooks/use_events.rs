@@ -11,7 +11,7 @@ use std::{pin::pin, task::Poll};
 // 私有 trait，用于防止外部实现 UseEvents
 mod private {
     pub trait Sealed {}
-    impl Sealed for crate::hooks::Hooks<'_> {}
+    impl Sealed for crate::hooks::Hooks<'_, '_> {}
 }
 
 // UseEvents trait：为 Hooks 提供 use_events 和 use_local_events 两种事件 Hook
@@ -28,7 +28,7 @@ pub trait UseEvents: private::Sealed {
 }
 
 // Hooks 实现 UseEvents trait
-impl UseEvents for Hooks<'_> {
+impl UseEvents for Hooks<'_, '_> {
     fn use_events<F>(&mut self, f: F)
     where
         F: FnMut(Event) + Send + 'static,

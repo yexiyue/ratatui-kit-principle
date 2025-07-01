@@ -45,7 +45,7 @@ impl Component for Text {
         &mut self,
         props: &mut Self::Props<'_>,
         _hooks: hooks::Hooks,
-        _updater: &mut ratatui_kit_principle::render::updater::ComponentUpdater<'_>,
+        _updater: &mut ratatui_kit_principle::render::updater::ComponentUpdater<'_, '_>,
     ) {
         *self = Self {
             text: props.text.to_string(),
@@ -82,7 +82,7 @@ impl Component for Border {
         &mut self,
         props: &mut Self::Props<'_>,
         _hooks: hooks::Hooks,
-        _updater: &mut ratatui_kit_principle::render::updater::ComponentUpdater<'_>,
+        _updater: &mut ratatui_kit_principle::render::updater::ComponentUpdater<'_, '_>,
     ) {
         self.border_style = props.clone();
     }
@@ -132,7 +132,7 @@ impl Component for View {
         &mut self,
         props: &mut Self::Props<'_>,
         _hooks: hooks::Hooks,
-        updater: &mut ratatui_kit_principle::render::updater::ComponentUpdater<'_>,
+        updater: &mut ratatui_kit_principle::render::updater::ComponentUpdater<'_, '_>,
     ) {
         updater.set_layout_style(LayoutStyle {
             flex_direction: props.flex_direction,
@@ -144,7 +144,7 @@ impl Component for View {
             height: props.height,
         });
 
-        updater.update_children(props.children.iter_mut());
+        updater.update_children(props.children.iter_mut(), None);
     }
 }
 
@@ -172,7 +172,7 @@ impl Component for Counter {
         &mut self,
         _props: &mut Self::Props<'_>,
         mut hooks: hooks::Hooks,
-        updater: &mut ratatui_kit_principle::render::updater::ComponentUpdater<'_>,
+        updater: &mut ratatui_kit_principle::render::updater::ComponentUpdater<'_, '_>,
     ) {
         let mut state = hooks.use_state(|| 0);
 
@@ -263,6 +263,6 @@ impl Component for Counter {
             },
         };
 
-        updater.update_children([element]);
+        updater.update_children([element], None);
     }
 }
