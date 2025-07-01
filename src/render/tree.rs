@@ -5,6 +5,7 @@ use crate::{
     component::{
         component_helper::ComponentHelperExt, instantiated_component::InstantiatedComponent,
     },
+    context::{ContextStack, SystemContext},
     element::{ElementExt, key::ElementKey},
     props::AnyProps,
     render::drawer::ComponentDrawer,
@@ -14,6 +15,7 @@ use crate::{
 pub struct Tree<'a> {
     root_component: InstantiatedComponent,
     props: AnyProps<'a>,
+    system_context: SystemContext,
 }
 
 impl<'a> Tree<'a> {
@@ -25,11 +27,16 @@ impl<'a> Tree<'a> {
                 helper,
             ),
             props,
+            system_context: SystemContext::new(),
         }
     }
 
     pub fn render(&mut self, terminal: &mut Terminal) -> io::Result<()> {
-        self.root_component.update(self.props.borrow(), terminal);
+        // 创建上下文栈
+        let mut context_stack = ContextStack::root(&mut self.system_context);
+        
+        self.root_component
+            .update(self.props.borrow(), terminal, &mut context_stack);
 
         terminal.draw(|frame| {
             let area = frame.area();

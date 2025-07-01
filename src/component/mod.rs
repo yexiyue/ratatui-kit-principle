@@ -52,7 +52,7 @@ pub trait Component: Any + Send + Sync {
         &mut self,
         _props: &mut Self::Props<'_>,
         _hooks: Hooks,
-        _updater: &mut ComponentUpdater<'_>,
+        _updater: &mut ComponentUpdater<'_, '_>,
     ) {
     }
 }
@@ -67,7 +67,7 @@ pub trait AnyComponent: Any + Send + Sync {
         drawer: &mut ComponentDrawer<'_, '_>,
     ) -> Vec<ratatui::prelude::Rect>;
 
-    fn update(&mut self, props: AnyProps, hooks: Hooks, updater: &mut ComponentUpdater<'_>);
+    fn update(&mut self, props: AnyProps, hooks: Hooks, updater: &mut ComponentUpdater<'_, '_>);
 }
 
 // 为所有实现了 Component trait 的类型自动实现 AnyComponent trait
@@ -89,7 +89,12 @@ where
         Component::calc_children_areas(self, children, layout_style, drawer)
     }
 
-    fn update(&mut self, mut props: AnyProps, hooks: Hooks, updater: &mut ComponentUpdater<'_>) {
+    fn update(
+        &mut self,
+        mut props: AnyProps,
+        hooks: Hooks,
+        updater: &mut ComponentUpdater<'_, '_>,
+    ) {
         Component::update(
             self,
             unsafe { props.downcast_mut_unchecked() },

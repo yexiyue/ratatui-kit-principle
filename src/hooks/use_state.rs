@@ -12,7 +12,7 @@ use std::{
 
 mod private {
     pub trait Sealed {}
-    impl Sealed for crate::hooks::Hooks<'_> {}
+    impl Sealed for crate::hooks::Hooks<'_, '_> {}
 }
 
 // use_state 的 Hook trait扩展，允许在组件中声明本地状态
@@ -79,7 +79,7 @@ where
 }
 
 // Hooks<'_> 扩展，实现 use_state 方法
-impl UseState for Hooks<'_> {
+impl UseState for Hooks<'_, '_> {
     fn use_state<T, F>(&mut self, init: F) -> State<T>
     where
         F: FnOnce() -> T,

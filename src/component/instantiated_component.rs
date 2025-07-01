@@ -4,6 +4,7 @@ use ratatui::layout::{Constraint, Direction};
 use super::component_helper::ComponentHelperExt;
 use crate::{
     component::AnyComponent,
+    context::ContextStack,
     element::key::ElementKey,
     hooks::{AnyHook, Hook, Hooks},
     multimap::RemoveOnlyMultimap,
@@ -69,13 +70,19 @@ impl InstantiatedComponent {
     }
 
     /// 更新当前组件及其子组件的状态，驱动 Hook 生命周期和属性变更
-    pub fn update(&mut self, props: AnyProps, terminal: &mut Terminal) {
+    pub fn update(
+        &mut self,
+        props: AnyProps,
+        terminal: &mut Terminal,
+        context_stack: &mut ContextStack,
+    ) {
         // 构造组件更新辅助器，便于管理子组件和布局
         let mut updater = ComponentUpdater::new(
             self.key.clone(),
             &mut self.children,
             &mut self.layout_style,
             terminal,
+            context_stack,
         );
 
         // 更新前调用所有 Hook 的 pre_component_update 钩子
