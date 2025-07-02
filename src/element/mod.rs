@@ -9,11 +9,13 @@ use crate::{
     props::AnyProps,
     render::tree::render_loop,
 };
-use key::ElementKey;
+pub use key::ElementKey;
 mod any_element;
 pub use any_element::AnyElement;
 mod element_ext;
 pub use element_ext::ElementExt;
+mod extend_with_elements;
+pub use extend_with_elements::{ExtendWithElements, extend_with_elements};
 
 /// ElementType trait：为每种组件类型定义 Props 类型，便于泛型处理
 pub trait ElementType {
