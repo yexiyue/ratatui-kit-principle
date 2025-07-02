@@ -5,6 +5,7 @@ use ratatui::{
     style::{Style, Stylize},
     widgets::{Block, Paragraph},
 };
+use ratatui_kit_macros::element;
 // 引入 ratatui-kit-principle 组件系统相关模块
 use ratatui_kit_principle::{
     component::Component,
@@ -23,6 +24,7 @@ pub struct Text {
 }
 
 // 文本组件的 Props
+#[derive(Default)]
 pub struct TextProps<'a> {
     pub text: &'a str,
     pub style: Style,
@@ -195,73 +197,87 @@ impl Component for Counter {
 
         let counter_text = format!("Count: {}", state.get());
 
-        let element = Element::<View> {
-            key: ElementKey::new("root"),
-            props: ViewProps {
-                children: vec![
-                    Element::<View> {
-                        key: ElementKey::new("header"),
-                        props: ViewProps {
-                            children: vec![
-                                Element::<Text> {
-                                    key: ElementKey::new("title"),
-                                    props: TextProps {
-                                        text: "Welcome to the Counter App",
-                                        style: Style::default().bold().light_blue(),
-                                        alignment: ratatui::layout::Alignment::Center,
-                                    },
-                                }
-                                .into(),
-                            ],
-                            height: Constraint::Length(1),
-                            ..Default::default()
-                        },
-                    }
-                    .into(),
-                    Element::<View> {
-                        key: ElementKey::new("body"),
-                        props: ViewProps {
-                            children: vec![
-                                Element::<Text> {
-                                    key: ElementKey::new("number"),
-                                    props: TextProps {
-                                        text: counter_text.as_str(),
-                                        style: Style::default().light_green(),
-                                        alignment: ratatui::layout::Alignment::Center,
-                                    },
-                                }
-                                .into(),
-                            ],
-                            height: Constraint::Fill(1),
-                            ..Default::default()
-                        },
-                    }
-                    .into(),
-                    Element::<View> {
-                        key: ElementKey::new("footer"),
-                        props: ViewProps {
-                            children: vec![
-                            Element::<Text> {
-                                key: ElementKey::new("info"),
-                                props: TextProps {
-                                    text: "Press q or Ctrl+C to quit, + to increase, - to decrease",
-                                    style: Style::default().yellow(),
-                                    alignment: ratatui::layout::Alignment::Center,
-                                },
-                            }
-                            .into(),
-                        ],
-                            height: Constraint::Length(1),
-                            ..Default::default()
-                        },
-                    }
-                    .into(),
-                ],
-                flex_direction: Direction::Vertical,
-                gap: 3,
-                ..Default::default()
-            },
+        let element = element! {
+            View(flex_direction: Direction::Vertical,gap: 3,){
+                View(height: Constraint::Length(1),){
+                    Text(
+                        text: "Welcome to the Counter App", style: Style::default().bold().light_blue(), alignment: ratatui::layout::Alignment::Center)
+                }
+                View(height: Constraint::Fill(1),){
+                    Text(text: counter_text.as_str(), style: Style::default().light_green(), alignment: ratatui::layout::Alignment::Center)
+                }
+                View(height: Constraint::Length(1),){
+                    Text(text: "Press q or Ctrl+C to quit, + to increase, - to decrease", style: Style::default().yellow(), alignment: ratatui::layout::Alignment::Center)
+                }
+            }
         };
+        // let element = Element::<View> {
+        //     key: ElementKey::new("root"),
+        //     props: ViewProps {
+        //         children: vec![
+        //             Element::<View> {
+        //                 key: ElementKey::new("header"),
+        //                 props: ViewProps {
+        //                     children: vec![
+        //                         Element::<Text> {
+        //                             key: ElementKey::new("title"),
+        //                             props: TextProps {
+        //                                 text: "Welcome to the Counter App",
+        //                                 style: Style::default().bold().light_blue(),
+        //                                 alignment: ratatui::layout::Alignment::Center,
+        //                             },
+        //                         }
+        //                         .into(),
+        //                     ],
+        //                     height: Constraint::Length(1),
+        //                     ..Default::default()
+        //                 },
+        //             }
+        //             .into(),
+        //             Element::<View> {
+        //                 key: ElementKey::new("body"),
+        //                 props: ViewProps {
+        //                     children: vec![
+        //                         Element::<Text> {
+        //                             key: ElementKey::new("number"),
+        //                             props: TextProps {
+        //                                 text: counter_text.as_str(),
+        //                                 style: Style::default().light_green(),
+        //                                 alignment: ratatui::layout::Alignment::Center,
+        //                             },
+        //                         }
+        //                         .into(),
+        //                     ],
+        //                     height: Constraint::Fill(1),
+        //                     ..Default::default()
+        //                 },
+        //             }
+        //             .into(),
+        //             Element::<View> {
+        //                 key: ElementKey::new("footer"),
+        //                 props: ViewProps {
+        //                     children: vec![
+        //                     Element::<Text> {
+        //                         key: ElementKey::new("info"),
+        //                         props: TextProps {
+        //                             text: "Press q or Ctrl+C to quit, + to increase, - to decrease",
+        //                             style: Style::default().yellow(),
+        //                             alignment: ratatui::layout::Alignment::Center,
+        //                         },
+        //                     }
+        //                     .into(),
+        //                 ],
+        //                     height: Constraint::Length(1),
+        //                     ..Default::default()
+        //                 },
+        //             }
+        //             .into(),
+        //         ],
+        //         flex_direction: Direction::Vertical,
+        //         gap: 3,
+        //         ..Default::default()
+        //     },
+        // };
 
         updater.update_children([element], None);
     }
